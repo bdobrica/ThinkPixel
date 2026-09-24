@@ -8,19 +8,19 @@ It answers one question:
 
 It controls development priority, not architectural truth.
 
-Published contracts, accepted ADRs, security boundaries, and component ownership remain authoritative within their respective scopes.
+Accepted ADRs, published contracts, security boundaries, and component ownership remain authoritative within their respective scopes.
 
 For permanent platform context, see the root [`README.md`](../../README.md).
 
 For component metadata, see [`catalog/components.yaml`](../../catalog/components.yaml).
 
-For platform release semantics, see [`releases/README.md`](../../releases/README.md).
+For release and compatibility semantics, see [`releases/README.md`](../../releases/README.md).
 
 ---
 
 ## Current objective
 
-Build one reproducible vertical slice demonstrating that ThinkPixel can run a useful coding agent while keeping **authority, credentials, durable work, and governed side effects outside disposable agent compute**.
+Build one reproducible vertical slice demonstrating that ThinkPixel can run a useful coding agent while keeping **authority, long-lived credentials, durable work, and governed side effects outside disposable agent compute**.
 
 The target scenario is:
 
@@ -32,7 +32,7 @@ The objective is to make the architecture **observable through a real working sy
 
 ---
 
-## What the demo must make visible
+## What the vertical slice must prove
 
 The scenario should visibly demonstrate six properties:
 
@@ -43,7 +43,7 @@ The scenario should visibly demonstrate six properties:
 5. **State is durable.**
 6. **Side effects are governed.**
 
-If a shortcut makes one of these claims false, it is not an acceptable shortcut.
+A shortcut is acceptable only if these claims remain true.
 
 ---
 
@@ -73,7 +73,7 @@ flowchart LR
     TG -->|GitHub operation| GH
 ```
 
-The recovery portion must be real:
+Recovery must be real:
 
 ```mermaid
 flowchart LR
@@ -91,39 +91,39 @@ flowchart LR
 
 The original execution environment must actually disappear.
 
-Restarting the same process or pretending that sandbox loss occurred does not prove the intended property.
+Restarting the same process or merely simulating sandbox loss does not prove the intended property.
 
 ---
 
 ## Critical path
 
-### 1. ThinkPixelAR — primary implementation path
+### ThinkPixelAR — primary implementation path
 
 AR should receive the majority of implementation effort until the complete scenario works.
 
 The next meaningful capabilities are:
 
-* start, stop, and supervise a real Codex harness through the intended runtime path;
-* execute Codex inside the real sandbox boundary;
+* start and supervise a real Codex harness through the intended runtime path;
+* execute Codex inside the actual sandbox boundary;
 * create a durable logical Session and concrete Execution;
-* expose enough observable runtime events to understand what is happening;
+* expose enough runtime events to understand what is happening;
 * persist the state required for continuation;
 * deliberately destroy the execution sandbox;
 * create replacement compute;
 * reconstruct execution;
 * resume the same logical Session/workspace;
 * consume AG-provided authority;
-* receive governed LLMGW and TG access rather than embedding privileged credentials.
+* consume governed model and tool access rather than embedding privileged credentials.
 
 Do not delay this work for unrelated AR completeness.
 
 ---
 
-### 2. ThinkPixelAG — integrate, do not broaden
+### ThinkPixelAG — integrate, do not broaden
 
-AG is the authority/control-plane component for the current scenario.
+AG supplies authority for the current scenario.
 
-Implement only integration work needed to supply:
+Implement only integration work needed to provide:
 
 * governed Run authority;
 * resource/runtime authorization;
@@ -131,38 +131,37 @@ Implement only integration work needed to supply:
 * leases or fencing where required for correctness;
 * authorization consumed by AR and TG.
 
-Do not add unrelated governance features merely because AG can support them.
-
 The current objective is to **use AG as authority**, not enlarge AG.
 
 ---
 
-### 3. ThinkPixelLLMGW — prove one real model route
+### ThinkPixelLLMGW — support the Codex wire path
 
-Use the existing gateway path.
+The goal is:
 
-The target is:
+> one real Codex model interaction routed through LLMGW with observable identity and accounting.
 
-> one real Codex/model interaction routed through LLMGW with observable identity and accounting.
+The golden path must support the subset of the **OpenAI Responses API and SSE streaming semantics actually exercised by the pinned Codex version used by the demo**.
 
-One reproducible provider/model path is enough for the current milestone.
+Implement the smallest compatible subset required by that pinned client.
 
-Do not block the scenario on:
+Do not turn this milestone into a complete Responses API implementation or exhaustive provider-compatibility effort.
 
-* exhaustive provider qualification;
-* every model API shape;
-* broad production deployment qualification;
-* every supported provider behaving identically.
+The important proof is:
 
-Those are promotion concerns after the vertical slice exists.
+* Codex makes a real request;
+* the request traverses LLMGW;
+* provider credentials remain outside the agent sandbox;
+* request identity/accounting is observable;
+* streamed behavior required by Codex works correctly.
 
 ---
 
-### 4. ThinkPixelTG — prove one governed side effect
+### ThinkPixelTG — prove one governed side effect
 
 Route at least one obvious GitHub side effect through TG.
 
-Prefer an operation that is easy to understand while watching the demo, such as:
+Prefer an operation that is easy to understand while observing the scenario, such as:
 
 * posting a PR review comment;
 * creating or updating a review;
@@ -173,13 +172,13 @@ The important properties are:
 * the agent requests the operation;
 * TG performs the governed operation;
 * the agent does not receive the long-lived GitHub credential;
-* the operation can be correlated to platform authority and stable identities.
+* the operation can be correlated with platform authority and stable identities.
 
-The complexity of the GitHub operation itself is not the point.
+The complexity of the GitHub operation itself is not important.
 
 ---
 
-### 5. Durable Workspace behavior — minimum necessary
+### Durable Workspace behavior — minimum necessary
 
 The first milestone does not require complete ThinkPixelWS product maturity.
 
@@ -198,107 +197,103 @@ The boundary should remain replaceable by the intended ThinkPixelWS implementati
 
 ## Not on the critical path
 
-The following components remain legitimate parts of the wider ThinkPixel architecture but should not block this milestone.
+The following components remain valid parts of the wider architecture but should not block this milestone.
 
 ### ThinkPixelMP
 
 Dynamic marketplace resolution is not required.
 
-Pin immutable runtime/agent artifacts directly where necessary.
+Pin immutable runtime and agent artifacts directly where necessary.
 
 ### ThinkPixelMEM
 
-Long-term learned memory is not required for the current coding-agent recovery scenario.
+Long-term learned memory is not required for the coding-agent recovery scenario.
 
-Do not add memory simply because an agent platform is expected to have it.
+Do not add memory merely because an agent platform is expected to have it.
 
 ### ThinkPixelGR
 
 Guardrail integration is not required unless a concrete operation in the active path needs it.
 
-Integrate guardrails around a real path, not around hypothetical future traffic.
+Integrate guardrails around real traffic, not hypothetical future traffic.
 
 ### ThinkPixelXP
 
-Experimentation and evaluation should follow once there is a stable execution path whose variants and outcomes are worth comparing.
+Experimentation and evaluation should follow once there is a stable execution path whose variants and outcomes are meaningful to compare.
 
-### ThinkPixelInfra / future SR boundary
+### ThinkPixelInfra
 
-The existing search/RAG lineage is adjacent to the current agent-runtime milestone.
+The existing search/RAG implementation is adjacent to the current runtime milestone.
 
-Do not force it into the golden path without a concrete use case.
+Do not force it into the golden path until a concrete use case establishes its platform boundary.
 
 ---
 
 ## Priority order
 
-When deciding what to work on next, use this ordering.
+When deciding what to work on next:
 
 ### P0 — Make the path execute
 
-Anything preventing the complete scenario from running.
+Fix anything preventing the complete scenario from running.
 
 Examples:
 
-* harness cannot start;
-* sandbox cannot be created;
-* Session/Execution cannot proceed;
-* model calls cannot route through LLMGW;
-* GitHub operation cannot route through TG;
-* durable state cannot survive replacement;
+* Codex cannot start;
+* the sandbox cannot be created;
+* Session/Execution lifecycle cannot proceed;
+* Codex model traffic cannot traverse LLMGW;
+* the GitHub operation cannot traverse TG;
+* durable state does not survive replacement;
 * replacement execution cannot resume;
-* AG authority cannot be consumed.
-
-Fix these first.
+* AG authority cannot be consumed correctly.
 
 ### P1 — Make the path truthful
 
-Anything that makes the demonstrated architectural claim false or misleading.
+Fix anything that makes the architectural demonstration misleading.
 
 Examples:
 
 * long-lived credentials enter the sandbox;
 * the agent can expand its own authority;
-* durable state is actually local to disposable compute;
-* TG is bypassed for the demonstrated side effect;
-* LLMGW is bypassed for model access;
-* stale/fenced execution can continue performing governed actions;
-* recovery silently creates a new logical Session instead of continuing the existing one.
+* durable state actually depends on disposable compute;
+* the demonstrated GitHub operation bypasses TG;
+* model traffic bypasses LLMGW;
+* stale or fenced execution can continue performing governed actions;
+* recovery creates a new logical Session rather than continuing the existing one.
 
 A demo that cheats is worse than no demo.
 
 ### P2 — Make the path reproducible
 
-Work that allows another developer to execute the same scenario reliably.
+Make it possible for another developer to run the same scenario reliably.
 
 Examples:
 
-* deterministic setup/reset;
-* pinned artifacts;
-* sample repository/task;
+* pinned Codex/runtime versions;
+* deterministic setup and reset;
+* a sample repository and task;
 * concise configuration;
 * useful diagnostics;
-* short startup procedure;
-* scripted demo execution.
+* scripted or documented execution.
 
 ### P3 — Package the milestone
 
-Once the scenario works reproducibly:
+Once the path works reproducibly:
 
 * stop broad feature development;
-* capture the exact participating revisions;
-* document known limitations;
-* record reproduction instructions;
-* create the appropriate platform demo/RC manifest;
-* tag the baseline where appropriate.
+* pin exact participating revisions and artifacts;
+* record known limitations;
+* document reproduction instructions;
+* create the appropriate platform release manifest.
 
 Only then broaden the platform.
 
 ---
 
-## Evidence we want
+## Evidence
 
-The demonstration should make cross-component identity understandable.
+The demo should make the important identities and boundaries observable.
 
 At minimum, an observer should be able to correlate:
 
@@ -320,7 +315,7 @@ flowchart LR
 
 Perfect distributed tracing is not required.
 
-Stable identifiers plus readable structured logs or output are sufficient initially.
+Stable identifiers plus readable structured logs or equivalent evidence are sufficient for the first milestone.
 
 Do not delay the scenario to build an observability platform.
 
@@ -328,30 +323,29 @@ Do not delay the scenario to build an observability platform.
 
 ## Definition of success
 
-The current milestone is reached when another developer can observe and reproduce this sequence:
+The milestone is reached when another developer can reproduce and observe this sequence:
 
 1. AG authorizes a governed Run.
 2. AR creates the logical Session and starts Codex inside isolated disposable compute.
 3. Codex receives a real repository task and performs useful work.
-4. Model traffic flows through LLMGW.
-5. A visible GitHub side effect flows through TG.
-6. The agent never receives the long-lived GitHub credential used for that operation.
-7. Work required for continuation persists outside the disposable sandbox.
-8. The sandbox is deliberately destroyed.
-9. Fresh compute is created.
-10. The same logical Session/workspace is reconstructed and continues.
-11. The relevant operations can be correlated through stable platform identities.
-12. The entire scenario can be reproduced from documented inputs.
+4. Codex model traffic flows through LLMGW.
+5. The Codex wire path required by the pinned client works through LLMGW, including required Responses/SSE behavior.
+6. A visible GitHub side effect flows through TG.
+7. The agent never receives the long-lived GitHub credential used for that operation.
+8. Work required for continuation persists outside the disposable sandbox.
+9. The sandbox is deliberately destroyed.
+10. Fresh compute is created.
+11. The same logical Session/workspace is reconstructed and continues.
+12. The relevant operations can be correlated through stable platform identities.
+13. The complete scenario can be reproduced from documented inputs.
 
-Optional but desirable in the same slice:
+Optional but desirable:
 
-13. AG cancellation or revocation prevents further governed work.
+14. AG cancellation or revocation prevents further governed work.
 
-Once items 1–12 work reproducibly, **stop**.
+Once items 1–13 work reproducibly, **stop**.
 
-Do not immediately add another capability.
-
-Package the working combination as a documented platform milestone first.
+Package the working combination before adding another platform capability.
 
 ---
 
@@ -373,9 +367,9 @@ Success does not imply:
 * experimentation infrastructure;
 * production-scale performance.
 
-Those claims require their own evidence.
+Those claims require separate evidence.
 
-The first milestone proves something narrower and more important:
+This milestone proves something narrower:
 
 > ThinkPixel can govern a useful agent across real model access, real tool access, disposable execution, durable work, and recovery without making the agent itself authoritative.
 
@@ -389,6 +383,8 @@ When choosing between:
 
 and:
 
-> making the ThinkPixel platform visibly perform the current end-to-end scenario,
+> making the current ThinkPixel vertical slice work through the correct boundaries,
 
-prefer the second **unless the shortcut would violate the authority, credential, ownership, compatibility, or security boundaries that make the result genuinely ThinkPixel**.
+prefer the vertical slice.
+
+Do not take a shortcut that invalidates the authority, credential, ownership, or isolation properties the scenario exists to demonstrate.

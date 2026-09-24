@@ -1,81 +1,10 @@
-# ThinkPixel ecosystem component catalog.
-#
-# This file is intended to become the canonical machine-readable index of
-# ThinkPixel repositories and their ecosystem-level maturity.
-#
-# Detailed implementation status remains owned by the individual repositories.
-#
-# Maturity vocabulary:
-#
-#   design
-#     Architecture is exploratory or not yet represented by stable contracts.
-#
-#   contract
-#     Architecture and/or public contracts exist, but the implementation is
-#     not yet sufficient to exercise the intended service boundary.
-#
-#   implementation
-#     Meaningful implementation exists and is actively being developed.
-#
-#   integration
-#     The component is being exercised across real ThinkPixel component
-#     boundaries.
-#
-#   rc
-#     A clearly scoped capability has a reproducible release-candidate path
-#     with documented limitations.
-#
-#   qualified
-#     The component has completed the explicitly documented qualification
-#     criteria for a defined deployment/support scope.
-#
-# Maturity does not imply platform integration. A component may be mature in
-# isolation without participating in a verified ThinkPixel platform release.
-
 schema_version: "1"
-
-snapshot_date: "2026-09-24"
 
 platform:
   id: thinkpixel
   repository: bdobrica/ThinkPixel
   status: pre-1.0
   production_qualified: false
-
-current_objective:
-  id: governed-coding-agent-recovery
-  description: >-
-    Run an approved Codex agent in isolated disposable compute, route model
-    access through ThinkPixelLLMGW, route a governed GitHub operation through
-    ThinkPixelTG, destroy the execution sandbox, reconstruct execution on fresh
-    compute, and continue the same durable session/workspace under
-    ThinkPixelAG authority.
-
-  properties:
-    - agents_are_untrusted
-    - authority_is_external
-    - credentials_are_external
-    - compute_is_disposable
-    - state_is_durable
-    - side_effects_are_governed
-
-  critical_path:
-    - ag
-    - ar
-    - llmgw
-    - tg
-
-  minimal_support:
-    - ws
-
-  deferred:
-    - mp
-    - mem
-    - gr
-    - xp
-
-  adjacent:
-    - sr
 
 maturity_model:
   - design
@@ -85,50 +14,16 @@ maturity_model:
   - rc
   - qualified
 
-demo_roles:
-  required:
-    description: Required for the current end-to-end vertical slice.
-
-  minimal_support:
-    description: >-
-      Only the smallest replaceable implementation needed by the current
-      vertical slice should be built or integrated.
-
-  deferred:
-    description: >-
-      Part of the platform architecture but should not block the current
-      vertical slice.
-
-  adjacent:
-    description: >-
-      Existing or related capability whose eventual platform integration
-      boundary has not yet been established.
-
 components:
   - id: ag
     name: ThinkPixelAG
     repository: bdobrica/ThinkPixelAG
-
-    role: >-
-      Agent governance and lifecycle control plane: agent/run authority,
-      policy decisions, resource envelopes, approvals, revocation, and
-      governance state.
-
     platform_area: governance
     maturity: rc
-    demo_role: required
-    critical_path: true
 
-    version: "0.1.0-rc.2"
-
-    status: >-
-      Release-candidate integration component. Broader production
-      qualification remains incomplete.
-
-    current_objective: >-
-      Supply governed Run authority, resource/runtime authorization,
-      cancellation/revocation, and authorization required by AR and TG without
-      broadening the control plane beyond what the vertical slice requires.
+    role: >-
+      Agent governance and lifecycle control plane for governed Run authority,
+      policy decisions, approvals, revocation, and resource envelopes.
 
     owns:
       - run_authority
@@ -140,35 +35,18 @@ components:
 
     does_not_own:
       - agent_execution
-      - long_lived_agent_compute
       - model_provider_credentials
       - downstream_tool_credentials
 
   - id: ar
     name: ThinkPixelAR
     repository: bdobrica/ThinkPixelAR
-
-    role: >-
-      Agent runtime for durable Sessions, isolated and disposable execution,
-      harness adaptation, recovery, and runtime events.
-
     platform_area: runtime
     maturity: implementation
-    demo_role: required
-    critical_path: true
 
-    version: null
-
-    status: >-
-      Architecture, persistence, and Kubernetes/Kata foundations are
-      implemented. Real runtime and cross-component integration remain under
-      active development.
-
-    current_objective: >-
-      Execute the real Codex harness through the sandbox path, persist enough
-      Session state for continuation, destroy and replace compute, resume the
-      same logical Session/workspace, and consume authority and gateway access
-      supplied by the wider platform.
+    role: >-
+      Agent runtime for durable Sessions, disposable isolated execution,
+      harness adaptation, recovery, and runtime events.
 
     owns:
       - session_lifecycle
@@ -180,33 +58,18 @@ components:
 
     does_not_own:
       - durable_governance_authority
-      - long_lived_provider_credentials
-      - long_lived_tool_credentials
+      - model_provider_credentials
+      - downstream_tool_credentials
 
   - id: ws
     name: ThinkPixelWS
     repository: bdobrica/ThinkPixelWS
+    platform_area: workspace
+    maturity: contract
 
     role: >-
       Durable roaming Workspaces with persistent work context, immutable
       generations, materializations, snapshots, forks, and source provenance.
-
-    platform_area: workspace
-    maturity: contract
-    demo_role: minimal_support
-    critical_path: false
-
-    version: null
-
-    status: >-
-      Architecture and contracts are defined. Full service implementation has
-      not yet started.
-
-    current_objective: >-
-      Do not block the first integrated release on complete Workspace product
-      maturity. Provide or permit the smallest replaceable durable workspace
-      implementation needed to prove persistence, sandbox replacement,
-      reconstruction, and safe single-writer behavior.
 
     owns:
       - workspace_identity
@@ -218,25 +81,12 @@ components:
   - id: mem
     name: ThinkPixelMEM
     repository: bdobrica/ThinkPixelMEM
+    platform_area: memory
+    maturity: contract
 
     role: >-
       Governed long-term agent memory with provenance, temporal revisions,
       retrieval, correction, and forgetting.
-
-    platform_area: memory
-    maturity: contract
-    demo_role: deferred
-    critical_path: false
-
-    version: null
-
-    status: >-
-      Contract-first bootstrap is complete. Service implementation has not yet
-      reached the stage required for platform integration.
-
-    current_objective: >-
-      Remain off the critical path until a demonstrated agent workflow has a
-      concrete requirement for durable learned memory.
 
     owns:
       - memory_records
@@ -251,26 +101,12 @@ components:
   - id: mp
     name: ThinkPixelMP
     repository: bdobrica/ThinkPixelMP
-
-    role: >-
-      Marketplace and software supply-chain plane for Skills, runtimes, MCP
-      servers, agent bundles, and other immutable artifacts.
-
     platform_area: software_supply_chain
     maturity: implementation
-    demo_role: deferred
-    critical_path: false
 
-    version: null
-
-    status: >-
-      Active implementation. Dynamic marketplace resolution is not required by
-      the first integrated vertical slice.
-
-    current_objective: >-
-      Allow the initial demo to pin immutable runtime and agent artifacts
-      directly. Integrate marketplace resolution when artifact qualification
-      becomes necessary to a demonstrated capability.
+    role: >-
+      Marketplace and software supply-chain plane for Skills, runtimes,
+      MCP servers, agent bundles, and other immutable artifacts.
 
     owns:
       - artifact_metadata
@@ -281,26 +117,12 @@ components:
   - id: tg
     name: ThinkPixelTG
     repository: bdobrica/ThinkPixelTG
+    platform_area: tool_access
+    maturity: implementation
 
     role: >-
       Tool gateway and enforcement point for governed tool calls, downstream
       credentials, side effects, idempotency, and evidence.
-
-    platform_area: tool_access
-    maturity: implementation
-    demo_role: required
-    critical_path: true
-
-    version: null
-
-    status: >-
-      Phases 0 through 3 are implemented. Later-phase interfaces remain under
-      development.
-
-    current_objective: >-
-      Execute at least one visible governed GitHub operation without exposing
-      the long-lived GitHub credential to the agent sandbox, and produce
-      evidence linking the operation to platform authority.
 
     owns:
       - tool_invocation_boundary
@@ -315,27 +137,12 @@ components:
   - id: llmgw
     name: ThinkPixelLLMGW
     repository: bdobrica/ThinkPixelLLMGW
+    platform_area: model_access
+    maturity: rc
 
     role: >-
       LLM gateway for provider abstraction, model routing, credentials,
       budgets, accounting, and model-access policy.
-
-    platform_area: model_access
-    maturity: rc
-    demo_role: required
-    critical_path: true
-
-    version: null
-
-    status: >-
-      Chat Completions release-candidate path is available. OpenAI, Vertex AI,
-      and Bedrock provider paths are implemented. Broader production
-      qualification remains incomplete.
-
-    current_objective: >-
-      Route one real Codex/model interaction through the existing gateway path
-      with observable request and accounting identity. Exhaustive provider
-      qualification is deliberately outside the first integrated RC.
 
     owns:
       - provider_credentials
@@ -350,26 +157,12 @@ components:
   - id: gr
     name: ThinkPixelGR
     repository: bdobrica/ThinkPixelGR
+    platform_area: guardrails
+    maturity: implementation
 
     role: >-
       Guardrail evaluator for model, tool, retrieval, and ingestion content,
       returning findings and decisions for callers to enforce.
-
-    platform_area: guardrails
-    maturity: implementation
-    demo_role: deferred
-    critical_path: false
-
-    version: null
-
-    status: >-
-      A runnable deterministic evaluation slice exists. Additional adapters
-      and production deployment work remain planned.
-
-    current_objective: >-
-      Do not block the first integrated vertical slice on broad guardrail
-      coverage. Integrate GR when a concrete model, tool, retrieval, or
-      ingestion path requires evaluation.
 
     owns:
       - content_evaluation
@@ -383,27 +176,13 @@ components:
   - id: xp
     name: ThinkPixelXP
     repository: bdobrica/ThinkPixelXP
+    platform_area: experimentation
+    maturity: implementation
 
     role: >-
       Experimentation and evaluation plane for immutable pipeline variants,
       assignment, exposure and outcome evidence, offline and shadow
       evaluation, controlled experiments, and statistical analysis.
-
-    platform_area: experimentation
-    maturity: implementation
-    demo_role: deferred
-    critical_path: false
-
-    version: null
-
-    status: >-
-      Active implementation with initial analytics, statistics, storage, and
-      safety controls available.
-
-    current_objective: >-
-      Remain outside the first integrated demo. Add experimentation and
-      evaluation once a stable execution path exists whose variants and
-      outcomes are meaningful to compare.
 
     owns:
       - experiment_definition
@@ -412,30 +191,11 @@ components:
       - outcome_evidence
       - experiment_analysis
 
-  - id: sr
+adjacent_repositories:
+  - id: infra
     name: ThinkPixelInfra
-    future_name: ThinkPixelSR
     repository: bdobrica/ThinkPixelInfra
 
-    role: >-
-      Existing search, retrieval, and RAG implementation combining
-      embedding-based retrieval with search infrastructure.
-
-    platform_area: search_and_retrieval
-    maturity: implementation
-    demo_role: adjacent
-    critical_path: false
-
-    version: null
-
-    status: >-
-      Existing standalone implementation. Its eventual boundary with the
-      wider ThinkPixel agent architecture remains intentionally undefined.
-
-    current_objective: >-
-      Do not force the existing search/RAG lineage into the first agent-runtime
-      demo. Define its future platform boundary only when a concrete use case
-      requires it.
-
-    owns:
-      - standalone_search_and_retrieval_capability
+    relationship: >-
+      Existing search, retrieval, and RAG implementation. Its future boundary
+      with the ThinkPixel agent platform remains intentionally undefined.
