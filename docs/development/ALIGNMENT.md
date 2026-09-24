@@ -1,435 +1,394 @@
 # ThinkPixel Development Alignment
 
-This document defines the current **cross-repository development priority** for ThinkPixel.
+This document defines the **current cross-repository development objective** for ThinkPixel.
 
-It exists to prevent individual component plans from becoming more important than proving that the platform works.
+It answers one question:
 
-It controls **what we prioritize**, not the meaning of published contracts, accepted ADRs, or core security boundaries.
+> **What should the platform prove next?**
+
+It controls development priority, not architectural truth.
+
+Published contracts, accepted ADRs, security boundaries, and component ownership remain authoritative within their respective scopes.
+
+For permanent platform context, see the root [`README.md`](../../README.md).
+
+For component metadata, see [`catalog/components.yaml`](../../catalog/components.yaml).
+
+For platform release semantics, see [`releases/README.md`](../../releases/README.md).
 
 ---
 
 ## Current objective
 
-The immediate objective is to produce a **useful, reproducible ThinkPixel vertical slice** that can serve both as:
+Build one reproducible vertical slice demonstrating that ThinkPixel can run a useful coding agent while keeping **authority, credentials, durable work, and governed side effects outside disposable agent compute**.
 
-1. a compelling platform demo; and
-2. the basis of release-candidate builds for the participating components.
+The target scenario is:
 
-For this phase, system-level proof is more important than advancing every repository toward independent completeness.
+> Give an approved Codex agent a GitHub repository, execute it inside isolated disposable compute, route model access through ThinkPixelLLMGW, route a visible GitHub operation through ThinkPixelTG, destroy the execution sandbox completely, reconstruct execution on fresh compute, and continue the same logical Session/workspace under ThinkPixelAG authority.
 
-A component should receive substantial development effort when it directly advances the current vertical slice or fixes a problem discovered while exercising it.
+The objective is not broad feature coverage.
 
----
-
-## North Star scenario
-
-The current target scenario is:
-
-> Give an approved Codex agent a GitHub repository, let it inspect and modify work through isolated execution, route its model access through ThinkPixelLLMGW, route a governed GitHub operation through ThinkPixelTG, destroy its execution sandbox completely, reconstruct execution on fresh compute, and continue the same durable session/workspace under ThinkPixelAG authority.
-
-The desired demonstration should make these properties visible:
-
-**Agents are untrusted.
-Authority lives outside the agent.
-Credentials live outside the agent.
-Compute is disposable.
-State is durable.
-Side effects are governed.**
-
-The audience should see the architecture working rather than being shown a diagram describing how it might work.
+The objective is to make the architecture **observable through a real working system**.
 
 ---
 
-## Current critical path
+## What the demo must make visible
 
-Development priority is currently:
+The scenario should visibly demonstrate six properties:
 
-### 1. ThinkPixelAR — primary critical path
+1. **Agents are untrusted.**
+2. **Authority is external.**
+3. **Credentials are external.**
+4. **Compute is disposable.**
+5. **State is durable.**
+6. **Side effects are governed.**
+
+If a shortcut makes one of these claims false, it is not an acceptable shortcut.
+
+---
+
+## Golden path
+
+```mermaid
+flowchart LR
+    USER["Developer / operator"]
+    AG["ThinkPixelAG<br/>governed Run authority"]
+    AR["ThinkPixelAR<br/>Session + disposable execution"]
+    WS[("Durable work context")]
+    LLMGW["ThinkPixelLLMGW<br/>governed model access"]
+    MODEL["Model provider"]
+    TG["ThinkPixelTG<br/>governed tool execution"]
+    GH["GitHub"]
+
+    USER -->|start governed work| AG
+    AG -->|Run authority| AR
+
+    AR <-->|persist / reconstruct| WS
+
+    AR -->|model request| LLMGW
+    LLMGW --> MODEL
+
+    AR -->|tool intent| TG
+    TG -->|authorize / correlate| AG
+    TG -->|GitHub operation| GH
+```
+
+The recovery portion must be real:
+
+```mermaid
+flowchart LR
+    RUNNING["Running sandbox"]
+    DURABLE["Durable Session / work state"]
+    DEAD["Sandbox destroyed"]
+    FRESH["Fresh compute"]
+    RESUMED["Same logical Session / workspace resumed"]
+
+    RUNNING -->|persist required state| DURABLE
+    DURABLE --> DEAD
+    DEAD --> FRESH
+    FRESH -->|reconstruct| RESUMED
+```
+
+The original execution environment must actually disappear.
+
+Restarting the same process or pretending that sandbox loss occurred does not prove the intended property.
+
+---
+
+## Critical path
+
+### 1. ThinkPixelAR — primary implementation path
 
 AR should receive the majority of implementation effort until the complete scenario works.
 
-The important milestones are:
+The next meaningful capabilities are:
 
-* start, stop, and supervise a real harness through `agentd`;
-* run Codex through the real sandbox path;
-* create a Session/Execution and stream observable events;
-* persist the state needed for continuation;
-* destroy the execution sandbox;
+* start, stop, and supervise a real Codex harness through the intended runtime path;
+* execute Codex inside the real sandbox boundary;
+* create a durable logical Session and concrete Execution;
+* expose enough observable runtime events to understand what is happening;
+* persist the state required for continuation;
+* deliberately destroy the execution sandbox;
 * create replacement compute;
+* reconstruct execution;
 * resume the same logical Session/workspace;
-* consume AG authority rather than relying on local authority;
-* supply governed LLMGW and TG access to the runtime.
+* consume AG-provided authority;
+* receive governed LLMGW and TG access rather than embedding privileged credentials.
 
-Do not delay these milestones for unrelated AR completeness work.
+Do not delay this work for unrelated AR completeness.
+
+---
 
 ### 2. ThinkPixelAG — integrate, do not broaden
 
-AG is used for the demo as the authority/control-plane component.
+AG is the authority/control-plane component for the current scenario.
 
-Implement integration fixes required for:
+Implement only integration work needed to supply:
 
 * governed Run authority;
 * resource/runtime authorization;
-* leases/fencing where required;
-* cancellation/revocation;
-* authorization required by TG/AR.
+* cancellation and revocation;
+* leases or fencing where required for correctness;
+* authorization consumed by AR and TG.
 
-Avoid expanding AG into unrelated new capabilities until the vertical slice works.
+Do not add unrelated governance features merely because AG can support them.
 
-### 3. ThinkPixelLLMGW — integrate, do not re-qualify everything
+The current objective is to **use AG as authority**, not enlarge AG.
 
-Use the existing gateway path for model access.
+---
 
-The target is a real Codex/model interaction routed through LLMGW with observable request/accounting identity.
+### 3. ThinkPixelLLMGW — prove one real model route
 
-Do not block this path on exhaustive provider qualification, production deployment qualification, or support for every model/provider.
+Use the existing gateway path.
 
-One working, reproducible route is enough for the current RC path.
+The target is:
 
-### 4. ThinkPixelTG — integrate the GitHub operation
+> one real Codex/model interaction routed through LLMGW with observable identity and accounting.
 
-Use TG for at least one visible governed GitHub side effect.
+One reproducible provider/model path is enough for the current milestone.
 
-Prefer something easy to understand during a demo, such as:
+Do not block the scenario on:
+
+* exhaustive provider qualification;
+* every model API shape;
+* broad production deployment qualification;
+* every supported provider behaving identically.
+
+Those are promotion concerns after the vertical slice exists.
+
+---
+
+### 4. ThinkPixelTG — prove one governed side effect
+
+Route at least one obvious GitHub side effect through TG.
+
+Prefer an operation that is easy to understand while watching the demo, such as:
 
 * posting a PR review comment;
 * creating or updating a review;
-* another bounded operation that visibly proves governed tool execution.
+* another bounded GitHub operation with a clearly visible result.
 
-The agent must not receive the long-lived GitHub credential.
+The important properties are:
 
-TG should resolve/use the downstream credential and produce evidence linking the invocation to platform authority.
+* the agent requests the operation;
+* TG performs the governed operation;
+* the agent does not receive the long-lived GitHub credential;
+* the operation can be correlated to platform authority and stable identities.
+
+The complexity of the GitHub operation itself is not the point.
 
 ---
 
-## Supporting components
+### 5. Durable Workspace behavior — minimum necessary
 
-The following components remain part of the ThinkPixel architecture but should not block the first integrated RC.
+The first milestone does not require complete ThinkPixelWS product maturity.
 
-### ThinkPixelWS
-
-Do not wait for complete ThinkPixelWS product maturity.
-
-Use the smallest durable Workspace implementation or adapter necessary to prove:
+Use the smallest replaceable implementation necessary to prove:
 
 * persistent work context;
-* state surviving sandbox destruction;
+* survival across sandbox destruction;
 * reconstruction on replacement compute;
-* safe single-writer behavior needed by the demonstrated scenario.
+* safe writer behavior required by the demonstrated flow.
 
-Keep the boundary replaceable so the proper WS integration can replace the temporary implementation later.
+Do not couple AR permanently to a temporary persistence implementation.
+
+The boundary should remain replaceable by the intended ThinkPixelWS implementation.
+
+---
+
+## Not on the critical path
+
+The following components remain legitimate parts of the wider ThinkPixel architecture but should not block this milestone.
 
 ### ThinkPixelMP
 
-Do not require dynamic marketplace resolution for the first demo.
+Dynamic marketplace resolution is not required.
 
-It is acceptable to pin immutable runtime/agent artifacts directly in demo configuration, preferably by digest.
-
-Integrate MP when artifact qualification/resolution becomes necessary to the next demonstrated capability.
+Pin immutable runtime/agent artifacts directly where necessary.
 
 ### ThinkPixelMEM
 
-Not on the current critical path.
+Long-term learned memory is not required for the current coding-agent recovery scenario.
 
-The first platform demo does not require long-term learned memory.
-
-Do not add MEM merely because an agent platform is expected to have memory.
+Do not add memory simply because an agent platform is expected to have it.
 
 ### ThinkPixelGR
 
-Not on the current critical path unless a concrete demonstrated operation requires it.
+Guardrail integration is not required unless a concrete operation in the active path needs it.
 
-Do not block the first vertical slice on broad guardrail integration or detector coverage.
-
-Guardrails become valuable when there is a real model/tool/retrieval path to evaluate.
+Integrate guardrails around a real path, not around hypothetical future traffic.
 
 ### ThinkPixelXP
 
-Not required for the first integrated demo.
+Experimentation and evaluation should follow once there is a stable execution path whose variants and outcomes are worth comparing.
 
-Add experimentation/evaluation once there is a stable execution path whose variants or outcomes are worth comparing.
+### ThinkPixelInfra / future SR boundary
 
-### ThinkPixelSR
+The existing search/RAG lineage is adjacent to the current agent-runtime milestone.
 
-ThinkPixelSR currently represents an existing search/RAG lineage and use case.
-
-Its future integration with the wider agent platform should be driven by a concrete use case rather than forced into the first agent-runtime demo.
+Do not force it into the golden path without a concrete use case.
 
 ---
 
-## Demo / RC definition
+## Priority order
 
-For the current phase, **release candidate** does not mean:
+When deciding what to work on next, use this ordering.
 
-> production-ready for every intended environment and configuration.
+### P0 — Make the path execute
 
-It means:
-
-> a coherent, reproducible implementation of a clearly defined capability, with known limitations documented and with the demonstrated path working reliably enough for others to exercise.
-
-A narrow RC is acceptable.
-
-For example, the first integrated ThinkPixel RC may intentionally support:
-
-* one harness: Codex;
-* one sandbox path;
-* one Kubernetes/runtime configuration;
-* one model-provider route through LLMGW;
-* one TG connector: GitHub;
-* one persistence strategy;
-* one scripted golden-path scenario.
-
-That is sufficient if the path is real, reproducible, and architecturally meaningful.
-
-Broader qualification belongs to release promotion.
-
----
-
-## Priority rules
-
-When deciding what to work on next, use this order.
-
-### P0 — Make the golden path move
-
-Anything preventing the current end-to-end scenario from executing.
+Anything preventing the complete scenario from running.
 
 Examples:
 
 * harness cannot start;
 * sandbox cannot be created;
-* events cannot flow;
-* state cannot survive sandbox replacement;
-* AG authority cannot be consumed;
-* LLM calls cannot route through LLMGW;
-* GitHub operation cannot route through TG.
+* Session/Execution cannot proceed;
+* model calls cannot route through LLMGW;
+* GitHub operation cannot route through TG;
+* durable state cannot survive replacement;
+* replacement execution cannot resume;
+* AG authority cannot be consumed.
 
 Fix these first.
 
-### P1 — Make the golden path trustworthy
+### P1 — Make the path truthful
 
-Problems that make the scenario unsafe, misleading, or unreproducible.
+Anything that makes the demonstrated architectural claim false or misleading.
 
 Examples:
 
-* credentials leaking into the sandbox;
-* authority expansion;
-* stale/fencing violations;
-* corruption or loss of demonstrated durable state;
-* non-idempotent destructive retries;
-* inability to associate operations with stable IDs;
-* obvious security flaws in the demonstrated path.
+* long-lived credentials enter the sandbox;
+* the agent can expand its own authority;
+* durable state is actually local to disposable compute;
+* TG is bypassed for the demonstrated side effect;
+* LLMGW is bypassed for model access;
+* stale/fenced execution can continue performing governed actions;
+* recovery silently creates a new logical Session instead of continuing the existing one.
 
-### P2 — Make the golden path repeatable
+A demo that cheats is worse than no demo.
 
-Work that lets another developer reproduce the scenario reliably.
+### P2 — Make the path reproducible
+
+Work that allows another developer to execute the same scenario reliably.
 
 Examples:
 
 * deterministic setup/reset;
-* small deployment scripts;
+* pinned artifacts;
+* sample repository/task;
+* concise configuration;
 * useful diagnostics;
-* fixture/sample repository;
-* one-command or short-sequence demo startup;
-* documented required configuration.
+* short startup procedure;
+* scripted demo execution.
 
-### P3 — Promote the RC
+### P3 — Package the milestone
 
-Do this after the working vertical slice exists.
+Once the scenario works reproducibly:
 
-Examples:
+* stop broad feature development;
+* capture the exact participating revisions;
+* document known limitations;
+* record reproduction instructions;
+* create the appropriate platform demo/RC manifest;
+* tag the baseline where appropriate.
 
-* wider test matrices;
-* packaging polish;
-* expanded compatibility;
-* broader provider support;
-* SBOM/license/compliance automation;
-* deployment hardening;
-* HA/backup/restore;
-* comprehensive observability;
-* performance qualification.
-
-### P4 — Future platform work
-
-Do not prioritize unless it becomes necessary for an active use case.
+Only then broaden the platform.
 
 ---
 
-## What must not be traded away
+## Evidence we want
 
-Demo-first does not mean architecture-last.
+The demonstration should make cross-component identity understandable.
 
-The following remain non-negotiable unless explicitly redesigned:
+At minimum, an observer should be able to correlate:
 
-* governed authority remains outside the agent;
-* untrusted execution cannot grant itself additional authority;
-* long-lived credentials remain outside untrusted harness state;
-* TG retains responsibility for governed downstream side effects and credentials;
-* LLMGW retains responsibility for governed provider/model access and credentials;
-* component ownership boundaries remain explicit;
-* components do not couple through each other's private databases or internal types;
-* published cross-component contracts are not silently broken;
-* disposable compute must actually be disposable where the demo claims it is;
-* durable state must actually survive that disposal where the demo claims it does.
+```mermaid
+flowchart LR
+    RUN["AG Run"]
+    SESSION["AR Session"]
+    EXEC["AR Execution"]
+    MODEL["LLMGW request(s)"]
+    TOOL["TG invocation"]
+    EFFECT["GitHub side effect"]
 
-If the shortcut destroys the property being demonstrated, it is not an acceptable shortcut.
-
----
-
-## What may be intentionally deferred
-
-The following should normally **not block** the first useful RC unless a concrete issue makes them necessary:
-
-* complete feature coverage;
-* exhaustive failure-mode testing;
-* exhaustive security qualification outside the demonstrated path;
-* exhaustive model/provider matrices;
-* unused adapters;
-* generalized plugin frameworks;
-* warm pools;
-* multi-cluster or multi-region support;
-* production HA;
-* sophisticated autoscaling;
-* broad dashboards;
-* extensive chaos testing;
-* complete backup/restore qualification;
-* polished Helm/operator experience;
-* broad performance tuning;
-* comprehensive migration support for unreleased schemas;
-* complete documentation coverage;
-* exhaustive software-supply-chain automation;
-* comprehensive license/provenance auditing beyond known obligations;
-* speculative abstractions for future components.
-
-Known security, safety, legal, or compatibility problems must still be surfaced and handled proportionately.
-
-The goal is to defer **qualification breadth**, not conceal known defects.
-
----
-
-## Licensing and third-party software
-
-Licensing matters, but it should be handled proportionately to the current stage.
-
-For demo/RC work:
-
-* prefer permissively licensed dependencies when practical;
-* preserve required copyright/license notices;
-* preserve known attribution and redistribution requirements;
-* avoid dependencies with known terms incompatible with the intended distribution model;
-* record concrete unresolved issues.
-
-Do not make exhaustive license research, dependency provenance machinery, or final distribution qualification a prerequisite for exercising an otherwise valid RC path unless a real legal/distribution blocker has been identified.
-
-Final release promotion may impose stricter qualification requirements.
-
----
-
-## Verification philosophy
-
-Verification should answer:
-
-> **Does the capability we claim actually work?**
-
-For the current phase, prioritize:
-
-1. focused tests around changed behavior;
-2. integration tests across affected boundaries;
-3. actual golden-path execution;
-4. captured evidence from real sandbox/model/tool interactions.
-
-A passing repository-wide test matrix is useful.
-
-It is not a substitute for a platform scenario that actually runs.
-
-Likewise, an unrelated aggregate test failure should be reported but should not automatically consume implementation effort unless it invalidates the current RC path.
-
----
-
-## Golden-path evidence
-
-The integrated scenario should eventually make it possible to correlate at least:
-
-```text
-AG Run
-  ↓
-AR Session / Execution
-  ↓
-LLMGW model request(s)
-  ↓
-TG governed invocation
-  ↓
-GitHub side effect
+    RUN --> SESSION
+    SESSION --> EXEC
+    EXEC --> MODEL
+    EXEC --> TOOL
+    TOOL --> EFFECT
 ```
 
-and then demonstrate:
+Perfect distributed tracing is not required.
 
-```text
-running sandbox
-  ↓
-checkpoint / durable state
-  ↓
-sandbox destroyed
-  ↓
-fresh sandbox created
-  ↓
-same logical Session/workspace resumed
-```
+Stable identifiers plus readable structured logs or output are sufficient initially.
 
-The exact observability mechanism may evolve.
-
-Do not delay the demo to build a perfect distributed tracing platform.
-
-Stable IDs and readable logs/output are sufficient initially.
-
----
-
-## Demo ergonomics
-
-Do not block the first demonstration on a graphical UI.
-
-A terminal-driven demonstration is sufficient and may be preferable because it exposes what the platform is actually doing.
-
-Aim for:
-
-* deterministic sample repository/task;
-* predictable setup/reset;
-* minimal manual preparation;
-* obvious Run/Session/Execution identifiers;
-* visible sandbox destruction;
-* visible continuation after reconstruction;
-* visible governed GitHub side effect;
-* concise output rather than noisy internal logs.
+Do not delay the scenario to build an observability platform.
 
 ---
 
 ## Definition of success
 
-The immediate milestone is reached when a person can observe this sequence:
+The current milestone is reached when another developer can observe and reproduce this sequence:
 
-1. AG authorizes a Run.
-2. AR starts the agent in isolated disposable compute.
-3. Codex receives and works on a repository task.
-4. Its model access goes through LLMGW.
-5. A GitHub side effect goes through TG without exposing the long-lived credential to the agent.
-6. The sandbox is deliberately destroyed.
-7. AR reconstructs execution using fresh compute.
-8. The same logical work context continues.
-9. Revocation/cancellation can stop further governed work if included in the demonstrated slice.
+1. AG authorizes a governed Run.
+2. AR creates the logical Session and starts Codex inside isolated disposable compute.
+3. Codex receives a real repository task and performs useful work.
+4. Model traffic flows through LLMGW.
+5. A visible GitHub side effect flows through TG.
+6. The agent never receives the long-lived GitHub credential used for that operation.
+7. Work required for continuation persists outside the disposable sandbox.
+8. The sandbox is deliberately destroyed.
+9. Fresh compute is created.
+10. The same logical Session/workspace is reconstructed and continues.
+11. The relevant operations can be correlated through stable platform identities.
+12. The entire scenario can be reproduced from documented inputs.
 
-Once this works reproducibly, stop and treat it as a milestone.
+Optional but desirable in the same slice:
 
-Do not immediately expand the implementation until the working capability has been packaged, documented succinctly, and tagged as the appropriate demo/RC baseline.
+13. AG cancellation or revocation prevents further governed work.
+
+Once items 1–12 work reproducibly, **stop**.
+
+Do not immediately add another capability.
+
+Package the working combination as a documented platform milestone first.
+
+---
+
+## What this milestone does not claim
+
+Success does not imply:
+
+* every ThinkPixel component is integrated;
+* production qualification;
+* high availability;
+* multi-region operation;
+* exhaustive security testing;
+* every model provider is qualified;
+* every agent harness is supported;
+* complete Workspace functionality;
+* full Marketplace integration;
+* comprehensive guardrails;
+* long-term memory;
+* experimentation infrastructure;
+* production-scale performance.
+
+Those claims require their own evidence.
+
+The first milestone proves something narrower and more important:
+
+> ThinkPixel can govern a useful agent across real model access, real tool access, disposable execution, durable work, and recovery without making the agent itself authoritative.
 
 ---
 
 ## Guiding rule
 
-When there is a choice between:
+When choosing between:
 
 > making one repository more theoretically complete
 
-and
+and:
 
-> making the ThinkPixel platform visibly do something useful,
+> making the ThinkPixel platform visibly perform the current end-to-end scenario,
 
-prefer the second **unless doing so would violate the security, authority, compatibility, or ownership boundaries that make the result genuinely ThinkPixel**.
+prefer the second **unless the shortcut would violate the authority, credential, ownership, compatibility, or security boundaries that make the result genuinely ThinkPixel**.

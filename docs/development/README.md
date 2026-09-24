@@ -6,7 +6,7 @@ It is intentionally separate from component-local architecture, contracts, plans
 
 ## Files
 
-### [`AGENTS.md`](AGENTS.md)
+### [`COMPONENT_AGENTS.md`](COMPONENT_AGENTS.md)
 
 Shared instructions for coding agents and development harnesses working on ThinkPixel repositories.
 
@@ -63,7 +63,7 @@ docs/development/ALIGNMENT.md
 
 Update `ALIGNMENT.md` when the active cross-component milestone changes.
 
-Update `AGENTS.md` only when the general development behavior expected across ThinkPixel repositories changes.
+Update `COMPONENT_AGENTS.md` only when the general development behavior expected across ThinkPixel repositories changes.
 
 Avoid turning either file into:
 
