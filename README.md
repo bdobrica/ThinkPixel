@@ -114,6 +114,18 @@ Use this repository for:
 
 Component-specific implementation issues, plans, APIs, deployment instructions, and security details belong in the corresponding component repository.
 
+## Development
+
+Cross-repository development guidance lives in [`docs/development/`](docs/development/).
+
+Start with:
+
+* [`ALIGNMENT.md`](docs/development/ALIGNMENT.md) — current platform-level priorities, demo/RC target, and critical path.
+* [`AGENTS.md`](docs/development/AGENTS.md) — shared guidance for coding agents and development harnesses working across ThinkPixel repositories.
+
+The goal is to keep component work aligned around demonstrable end-to-end capabilities rather than independent repository completeness.
+
+
 ---
 
 ThinkPixel is under active development. Interfaces and component boundaries are being designed so that individual services remain independently deployable and replaceable rather than becoming a distributed monolith.
